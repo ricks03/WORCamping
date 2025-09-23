@@ -1,0 +1,263 @@
+# CCC WOR Camping Plugin - Complete Installation Guide
+
+## Plugin Directory Structure
+
+```
+ccc-wor-camping/
++-- ccc-wor-camping.php (main plugin file)
++-- includes/
+¦   +-- class-database.php
+¦   +-- class-admin.php
+¦   +-- class-frontend.php
+¦   +-- class-email.php
+¦   +-- class-woocommerce.php
+¦   +-- class-cron.php
+¦   +-- functions.php
++-- admin/
+¦   +-- pages/
+¦       +-- dashboard.php
+¦       +-- sites.php
+¦       +-- reservations.php
+¦       +-- annual.php
+¦       +-- emails.php
+¦       +-- settings.php
+¦       +-- logs.php
++-- frontend/
+¦   +-- reservation-form.php
++-- assets/
+    +-- admin.js
+    +-- admin.css
+    +-- frontend.js
+    +-- frontend.css
+```
+
+## Installation Steps
+
+### 1. File Setup
+
+1. Create the directory structure above in your WordPress plugins folder (`wp-content/plugins/ccc-wor-camping/`)
+2. Copy all the provided code into the appropriate files
+3. Ensure proper file permissions (644 for files, 755 for directories)
+
+### 2. WordPress Configuration
+
+1. **Create User Roles** (if not already existing):
+   - Navigate to Users ? Add New Role (using a plugin like User Role Editor)
+   - Create role: `ccc_member` with subscriber capabilities
+   - Create role: `ccc_officer` with editor capabilities
+
+2. **Install Required Plugins**:
+   - WooCommerce must be installed and activated
+   - Enable High-Performance Order Storage in WooCommerce settings
+
+### 3. Plugin Activation
+
+1. Go to Plugins ? Installed Plugins
+2. Find "CCC WOR Camping" and click Activate
+3. The plugin will automatically:
+   - Create all database tables
+   - Insert default sites (cabins, RV sites, electric sites, campsites)
+   - Set default configuration options
+   - Schedule cron jobs for cleanup
+
+### 4. WooCommerce Product Setup
+
+Create the following products in WooCommerce (Products ? Add New):
+
+1. **Campsite** - Set your 9-day price
+2. **Electric Site** - Set your 9-day price  
+3. **RV Site** - Set your 9-day price
+4. **Cabin** - Set your 9-day price
+5. **Guest** - Set per-person price
+
+For each product:
+- Set product type to "Simple Product"
+- Set catalog visibility to "Hidden"
+- Do NOT add to any categories or make searchable
+- The plugin will automatically add these to cart during checkout
+
+### 5. Initial Configuration
+
+Navigate to **Campground Reservations ? Settings** and configure:
+
+1. **Event Dates**:
+   - Event Start Date (e.g., July 1, 2025)
+   - Event End Date (e.g., July 9, 2025)
+
+2. **Availability Periods**:
+   - Annual Member Start Date (default: May 1)
+   - General Availability Date (default: June 1)
+   - Transaction Timeout (default: 30 minutes)
+
+3. **Campground Image**:
+   - Upload a campground map image to your Media Library
+   - Copy the URL and paste it in the settings
+
+### 6. Import Historical Data (Optional)
+
+If you have historical reservation data:
+
+1. Prepare a CSV file with format: `member_email,site_number,year`
+   - Example: `john@example.com,campsite_25,2023`
+   - Only include data from the last 2 years
+
+2. Go to **Campground Reservations ? Settings**
+3. Scroll to CSV Import section
+4. Upload your CSV file
+5. The system will validate each entry and only import valid records
+
+### 7. Create Reservation Page
+
+1. Go to Pages ? Add New
+2. Create a page titled "Week of Rivers Reservations"
+3. Add the shortcode: `[ccc_wor_reservations]`
+4. Set page permissions to require login (using a membership plugin or custom code)
+5. Publish the page
+
+### 8. Email Template Customization
+
+1. Navigate to **Campground Reservations ? Email Templates**
+2. Customize templates for each site type
+3. Use the available variables to personalize emails
+4. Save changes
+
+## Admin Features
+
+### Dashboard
+- View total sites, current year reservations, and available sites
+- See recent reservation activity
+
+### Site Management
+- Add, edit, or delete individual sites
+- Bulk import/export sites via CSV
+- Change site types
+- View warnings for missing WooCommerce products
+
+### Reservations
+- View all reservations by year
+- Filter and search reservations
+- Export transaction data to CSV
+- View reservation details with guest information
+
+### Annual Members
+- View all annual members and their sites
+- Review members who should lose annual status
+- Manually add/remove annual members
+- Send reminder emails to members who haven't reserved
+
+### Email Templates
+- Edit confirmation emails for each site type
+- Customize incomplete transaction email
+- Customize annual status removed email
+- Preview available template variables
+
+### Settings
+- Configure event dates and availability periods
+- Set transaction timeout
+- Upload campground map
+- Import historical CSV data
+
+### Transaction Log
+- View all system actions with timestamps
+- Track admin changes and user reservations
+- Audit trail with IP addresses and user details
+
+## User Workflow
+
+### For Annual Members (During Annual Period)
+1. Log in to website
+2. Navigate to reservation page
+3. See their annual site highlighted in blue
+4. Click to select their site
+5. Enter guest count and names
+6. Click "Reserve Site & Checkout"
+7. Complete WooCommerce checkout
+8. Receive confirmation email
+
+### For All Members (During General Period)
+1. Log in to website
+2. Navigate to reservation page
+3. View all available sites (green)
+4. Click to select any available site
+5. Enter guest count and names
+6. Click "Reserve Site & Checkout"
+7. Complete WooCommerce checkout
+8. Receive confirmation email
+
+## Troubleshooting
+
+### Sites Not Appearing
+- Check that sites are marked as "Active" in Site Management
+- Verify database tables were created properly
+
+### Payments Not Processing
+- Ensure WooCommerce products exist with exact names
+- Check product visibility is set to "Hidden"
+- Verify High-Performance Order Storage is enabled
+
+### Emails Not Sending
+- Check WordPress email configuration
+- Test with WP Mail SMTP plugin if needed
+- Verify email templates are saved in settings
+
+### Pending Reservations Not Clearing
+- Check that cron jobs are running (use WP Crontrol plugin)
+- Manually trigger: `wp cron event run ccc_wor_cleanup_pending_reservations`
+
+### Annual Status Issues
+- Import historical data to establish baseline
+- Manually add annual members if needed
+- Review and process members requiring status removal
+
+## Security Considerations
+
+1. **Role Permissions**: Only ccc_officer role and admins can access admin features
+2. **Nonce Verification**: All forms use WordPress nonces for CSRF protection
+3. **Data Sanitization**: All user inputs are sanitized and validated
+4. **SQL Injection Prevention**: Uses prepared statements for all database queries
+5. **Access Control**: Reservation page should be protected by membership plugin
+
+## Maintenance Tasks
+
+### Weekly
+- Review pending reservations
+- Check transaction logs for errors
+
+### Monthly  
+- Review annual status list
+- Send reminder emails to non-registered annual members
+
+### Before Each Event
+- Verify all settings are correct
+- Test reservation workflow
+- Export reservation data for backup
+
+### After Each Event
+- Export final transaction report
+- Review annual status for next year
+- Archive old data if needed
+
+## Support and Customization
+
+The plugin is built with WordPress coding standards and uses:
+- Object-oriented PHP architecture
+- WordPress hooks and filters for extensibility
+- Vanilla JavaScript (no jQuery dependencies in frontend)
+- Bootstrap-compatible CSS classes
+
+To extend functionality:
+- Add filters in functions.php for custom validations
+- Hook into actions for additional notifications
+- Modify templates for custom layouts
+- Add custom CSS for branding
+
+## Database Tables
+
+The plugin creates 5 custom tables:
+- `wp_ccc_wor_sites` - Site information
+- `wp_ccc_wor_reservations` - Reservation records
+- `wp_ccc_wor_annual_status` - Annual member tracking
+- `wp_ccc_wor_guest_names` - Guest information
+- `wp_ccc_wor_transaction_log` - Audit trail
+
+All tables use InnoDB engine with foreign key constraints and proper indexes for performance.

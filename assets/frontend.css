@@ -1,0 +1,170 @@
+/* assets/frontend.css */
+.ccc-wor-reservation-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.reservation-header {
+    background: #f5f5f5;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+}
+
+.reservation-header h2 {
+    margin-top: 0;
+}
+
+.event-dates {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #333;
+}
+
+.status-message {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    padding: 10px;
+    margin: 15px 0;
+    border-radius: 3px;
+}
+
+.site-legend {
+    margin: 20px 0;
+    padding: 15px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.legend-items {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-box {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #333;
+    display: inline-block;
+}
+
+.color-box.annual {
+    background-color: #007bff;
+}
+
+.color-box.open-to-all {
+    background-color: #20c997;
+}
+
+.color-box.available {
+    background-color: #28a745;
+}
+
+.color-box.reserved {
+    background-color: #dc3545;
+}
+
+.site-grid {
+    margin: 30px 0;
+}
+
+.site-type-group {
+    margin-bottom: 30px;
+}
+
+.site-type-group h3 {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #ddd;
+}
+
+.sites {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+}
+
+.site-box {
+    padding: 20px;
+    text-align: center;
+    border: 2px solid #333;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.site-box:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.site-box.annual {
+    background-color: #007bff;
+    color: white;
+}
+
+.site-box.open-to-all {
+    background-color: #20c997;
+    color: white;
+}
+
+.site-box.available {
+    background-color: #28a745;
+    color: white;
+}
+
+.site-box.reserved {
+    background-color: #dc3545;
+    color: white;
+    cursor: not-allowed;
+}
+
+.site-box.reserved:hover {
+    transform: none;
+}
+
+.site-box.selected {
+    border: 4px solid #ffc107;
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+}
+
+#reservation-form {
+    background: #f8f9fa;
+    padding: 20px;
+    margin-top: 30px;
+    border-radius: 5px;
+    border: 2px solid #007bff;
+}
+
+#reservation-form h3 {
+    margin-top: 0;
+}
+
+#reservation-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#reservation-form input[type="number"],
+#reservation-form textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 14px;
+}
+
+#reservation-form button {
+    margin-right: 10px;
+}
