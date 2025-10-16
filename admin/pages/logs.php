@@ -2,6 +2,10 @@
 <div class="wrap">
     <h1>Transaction Log</h1>
     
+    <div style="margin-bottom: 20px;">
+        <button type="button" class="button button-secondary" onclick="flushTransactionLog()" style="background: #dc3545; color: white; border-color: #dc3545;">Clear All Logs</button>
+    </div>
+    
     <?php
     global $wpdb;
     
@@ -64,3 +68,33 @@
     </div>
     <?php endif; ?>
 </div>
+
+<script>
+function flushTransactionLog() {
+    if (!confirm('Are you sure you want to permanently delete ALL transaction logs? This cannot be undone.')) {
+        return;
+    }
+    
+    if (!confirm('This will delete ALL audit trail data. Are you absolutely sure?')) {
+        return;
+    }
+    
+    jQuery.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'ccc_wor_admin_action',
+            ccc_action: 'flush_transaction_log',
+            nonce: '<?php echo wp_create_nonce('ccc_wor_nonce'); ?>'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('Transaction log cleared successfully.');
+                location.reload();
+            } else {
+                alert('Error clearing transaction log.');
+            }
+        }
+    });
+}
+</script>

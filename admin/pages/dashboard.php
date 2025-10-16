@@ -3,9 +3,10 @@
     <h1>Campground Administration</h1>
     
     <?php
-    $current_year = date('Y');
+    $current_year = ccc_wor_get_working_year();
     $reservations = ccc_wor_get_reservations($current_year);
     $total_reservations = count($reservations);
+echo "Working year: " . ccc_wor_get_working_year() . "<br>";
     
     global $wpdb;
     $total_sites = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}ccc_wor_sites WHERE is_active = 1");

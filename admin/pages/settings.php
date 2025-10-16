@@ -25,20 +25,24 @@
             </tr>
             <tr>
                 <th><label for="annual_start_date">Annual Member Start Date</label></th>
-                <td><input type="text" name="annual_start_date" id="annual_start_date" 
-                    value="<?php echo esc_attr(get_option('ccc_wor_annual_start_date', 'May 1')); ?>" 
-                    placeholder="May 1"></td>
+                <td><input type="date" name="annual_start_date" id="annual_start_date" 
+                    value="<?php echo esc_attr(get_option('ccc_wor_annual_start_date', '')); ?>"></td>
             </tr>
             <tr>
                 <th><label for="general_availability_date">General Availability Date</label></th>
-                <td><input type="text" name="general_availability_date" id="general_availability_date" 
-                    value="<?php echo esc_attr(get_option('ccc_wor_general_availability_date', 'June 1')); ?>" 
-                    placeholder="June 1"></td>
-            </tr>
+                <td><input type="date" name="general_availability_date" id="general_availability_date" 
+                    value="<?php echo esc_attr(get_option('ccc_wor_general_availability_date', '')); ?>"></td>
+            </tr>            
             <tr>
                 <th><label for="transaction_timeout">Transaction Timeout (minutes)</label></th>
                 <td><input type="number" name="transaction_timeout" id="transaction_timeout" 
                     value="<?php echo esc_attr(get_option('ccc_wor_transaction_timeout', 30)); ?>"></td>
+            </tr>
+            <tr>
+                <th><label for="reservation_url">Reservation URL</label></th>
+                <td><input type="url" name="reservation_url" id="reservation_url" 
+                    value="<?php echo esc_attr(get_option('ccc_wor_reservation_url')); ?>" 
+                    class="regular-text"></td>
             </tr>
             <tr>
                 <th><label for="campground_image_url">Campground Map Image URL</label></th>

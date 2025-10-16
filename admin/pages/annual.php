@@ -13,6 +13,13 @@
         echo '<div class="notice notice-error"><p>Failed to add annual member. Please try again.</p></div>';
     }
     
+    if (isset($_GET['error']) && $_GET['error'] === 'insert_failed') {
+        echo '<div class="notice notice-error"><p>Failed to add annual member. Please try again.</p></div>';
+    }
+    if (isset($_GET['error']) && $_GET['error'] === 'already_exists') {
+        echo '<div class="notice notice-error"><p>This user already has annual status for this site.</p></div>';
+    }
+    
     $annual_members = $wpdb->get_results("
         SELECT 
             a.annual_id,
@@ -31,16 +38,20 @@
     ");   
      
     // Get members who should lose annual status
-    $current_year = date('Y');
+    // Simple logic: We're in late 2025, so 2025 event is complete
+    // Anyone who last reserved before 2024 missed 2+ events (2024 and 2025)
+    $current_calendar_year = date('Y'); // 2025
+    $cutoff_year = $current_calendar_year - 1; // 2024
+
     $members_to_review = $wpdb->get_results($wpdb->prepare("
-        SELECT a.*, s.display_name, u.display_name as user_name, u.user_email
+        SELECT a.*, s.display_name as site_display_name, u.display_name as user_name, u.user_email
         FROM {$wpdb->prefix}ccc_wor_annual_status a
         JOIN {$wpdb->prefix}ccc_wor_sites s ON a.site_id = s.site_id
         JOIN {$wpdb->prefix}users u ON a.user_id = u.ID
         WHERE a.last_reserved_year < %d AND a.status = 'active'
         ORDER BY s.site_id
-    ", $current_year - 1));
-    
+    ", $cutoff_year));    
+          
     // Check for members who lost ccc_member role
     $lost_role = array();
     foreach ($annual_members as $member) {
@@ -56,7 +67,7 @@
         <h3>Members Requiring Review</h3>
         
         <?php if (!empty($members_to_review)): ?>
-        <h4>Members who missed 2 years:</h4>
+        <h4>Members who missed 2+ years:</h4>
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
@@ -75,7 +86,7 @@
                     <td><?php echo esc_html($member->user_email); ?></td>
                     <td><?php echo esc_html($member->last_reserved_year); ?></td>
                     <td>
-                        <button type="button" class="button" onclick="removeAnnualStatus(<?php echo $member->annual_id; ?>)">Remove Annual Status</button>
+                    <button type="button" class="button-small" onclick="deleteAnnualMember(<?php echo $member->annual_id; ?>, true, 'missed_years')">Delete & Email</button>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -84,24 +95,26 @@
         <?php endif; ?>
         
         <?php if (!empty($lost_role)): ?>
-        <h4>Members who lost ccc_member role:</h4>
+        <h4>Members with expired membership (missing ccc_member role):</h4>
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
                     <th>Site</th>
                     <th>User Name</th>
                     <th>Email</th>
+                    <th>Last Reserved Year</th>
                     <th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($lost_role as $member): ?>
                 <tr>
-                    <td><?php echo esc_html($member->display_name); ?></td>
+                    <td><?php echo esc_html($member->site_display_name); ?></td>
                     <td><?php echo esc_html($member->user_name); ?></td>
                     <td><?php echo esc_html($member->user_email); ?></td>
+                    <td><?php echo esc_html($member->last_reserved_year); ?></td>
                     <td>
-                        <button type="button" class="button" onclick="removeAnnualStatus(<?php echo $member->annual_id; ?>, true)">Remove Annual Status</button>
+                    <button type="button" class="button-small" onclick="deleteAnnualMember(<?php echo $member->annual_id; ?>, true, 'lost_membership')">Delete & Email</button>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -112,12 +125,12 @@
     <?php endif; ?>
     
     <h2>All Annual Members</h2>
-    <button type="button" class="button" onclick="sendReminderEmails()">Send Reminder Emails</button>
-    
-    <table class="wp-list-table widefat fixed striped">
+    <button type="button" class="button" onclick="sendReminderEmails()">Send Reminder Emails to ALL Annual Members</button>
+    <br>Note: Send Reminder Emails should not send reminders to those registered or invalid (by year and membership) above. But you should still address those first. 
+    <table class="wp-list-table widefat striped">
         <thead>
             <tr>
-                <th>Site ID</th>
+                <th>Site</th>
                 <th>User Name</th>
                 <th>User Email</th>
                 <th>Last Reserved Year</th>
@@ -128,13 +141,14 @@
         <tbody>
             <?php foreach ($annual_members as $member): ?>
             <tr>
-                <td><?php echo esc_html($member->site_id); ?></td>
+                <td><?php echo esc_html($member->site_display_name); ?></td>
                 <td><?php echo esc_html($member->user_name); ?></td>
                 <td><?php echo esc_html($member->user_email); ?></td>
                 <td><?php echo esc_html($member->last_reserved_year); ?></td>
                 <td><?php echo esc_html($member->status); ?></td>
                 <td>
-                    <button type="button" class="button-small" onclick="deleteAnnualMember(<?php echo $member->annual_id; ?>)">Delete</button>
+                    <button type="button" class="button-small" onclick="sendIndividualReminder(<?php echo $member->annual_id; ?>)">Send Email</button> | 
+<button type="button" class="button-small" onclick="editYear(<?php echo $member->annual_id; ?>, <?php echo $member->last_reserved_year; ?>, '<?php echo esc_js($member->user_name); ?>')">Edit Year</button>                    <button type="button" class="button-small" onclick="deleteAnnualMember(<?php echo $member->annual_id; ?>, false)">Delete</button>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -200,6 +214,10 @@
         </p>
     </form>
     
+    <h2>Export Annual Data</h2>
+    <p>Download current annual member data in CSV format (member_email, site_number, year)</p>
+    <button type="button" class="button" onclick="exportAnnualData()">Export Annual Data</button>
+    
     <?php
     // Show import results
     if (isset($_GET['message']) && $_GET['message'] === 'imported') {
@@ -220,31 +238,7 @@
 </div>
 
 <script>
-function removeAnnualStatus(annualId, sendEmail = false) {
-    if (!confirm('Are you sure you want to remove this annual status?')) {
-        return;
-    }
-    
-    jQuery.ajax({
-        url: ajaxurl,
-        type: 'POST',
-        data: {
-            action: 'ccc_wor_remove_annual_status',
-            annual_id: annualId,
-            send_email: sendEmail ? 1 : 0,
-            nonce: '<?php echo wp_create_nonce('ccc_wor_annual'); ?>'
-        },
-        success: function(response) {
-            if (response.success) {
-                location.reload();
-            } else {
-                alert('Error removing annual status');
-            }
-        }
-    });
-}
-
-function deleteAnnualMember(annualId) {
+function deleteAnnualMember(annualId, sendEmail = false, reason = 'general') {
     if (!confirm('Are you sure you want to delete this annual member?')) {
         return;
     }
@@ -255,6 +249,8 @@ function deleteAnnualMember(annualId) {
         data: {
             action: 'ccc_wor_delete_annual_member',
             annual_id: annualId,
+            send_email: sendEmail ? 1 : 0,
+            reason: reason,
             nonce: '<?php echo wp_create_nonce('ccc_wor_annual'); ?>'
         },
         success: function(response) {
@@ -262,6 +258,59 @@ function deleteAnnualMember(annualId) {
                 location.reload();
             } else {
                 alert('Error deleting annual member');
+            }
+        }
+    });
+}
+function exportAnnualData() {
+    window.location.href = ajaxurl + '?action=ccc_wor_export_annual&nonce=<?php echo wp_create_nonce('ccc_wor_annual'); ?>';
+}
+
+function sendIndividualReminder(annualId) {
+    
+    jQuery.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'ccc_wor_send_individual_reminder',
+            annual_id: annualId,
+            nonce: '<?php echo wp_create_nonce('ccc_wor_annual'); ?>'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('Reminder email sent successfully.');
+            } else {
+                alert('Error sending reminder email: ' + response.data);
+            }
+        }
+    });
+}
+
+function editYear(annualId, currentYear, userName) {
+    var newYear = prompt('Edit Last Reserved Year for ' + userName + ':', currentYear);
+    if (newYear === null || newYear === currentYear.toString()) {
+        return; // User cancelled or no change
+    }
+    
+    if (!/^\d{4}$/.test(newYear) || newYear < 2020 || newYear > 2030) {
+        alert('Please enter a valid year between 2020 and 2030');
+        return;
+    }
+    
+    jQuery.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'ccc_wor_update_annual_year',
+            annual_id: annualId,
+            last_reserved_year: newYear,
+            nonce: '<?php echo wp_create_nonce('ccc_wor_annual'); ?>'
+        },
+        success: function(response) {
+            if (response.success) {
+                location.reload();
+            } else {
+                alert('Error updating year: ' + response.data);
             }
         }
     });
