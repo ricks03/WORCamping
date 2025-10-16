@@ -40,7 +40,8 @@ class CCC_WOR_Cron {
             // Delete reservation
             $wpdb->delete(
                 $wpdb->prefix . 'ccc_wor_reservations',
-                array('reservation_id' => $reservation->reservation_id)
+                array('reservation_id' => $reservation->reservation_id),
+                array('%d')
             );
             
             ccc_wor_log_transaction('reservation_expired', $reservation->user_id, $reservation->site_id, 'Pending reservation expired and removed');

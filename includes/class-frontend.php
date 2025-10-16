@@ -81,10 +81,10 @@ class CCC_WOR_Frontend {
         }
         
         $user_id = get_current_user_id();
-        $site_id = sanitize_text_field($_POST['site_id']);
+        $site_id = intval($_POST['site_id']);
         $guest_count = intval($_POST['guest_count']);
         $guest_names = array_map('sanitize_text_field', explode("\n", $_POST['guest_names']));
-        $year = date('Y');
+        $year = ccc_wor_get_working_year(); // CHANGED
         
         // Validation
         $validation_result = $this->validate_reservation($user_id, $site_id, $year);
@@ -101,16 +101,21 @@ class CCC_WOR_Frontend {
             'status' => 'pending'
         );
         
-        $wpdb->insert($wpdb->prefix . 'ccc_wor_reservations', $reservation_data);
+        $wpdb->insert(
+            $wpdb->prefix . 'ccc_wor_reservations', 
+            $reservation_data,
+            array('%d', '%d', '%d', '%d', '%s')
+        );
         $reservation_id = $wpdb->insert_id;
         
         // Add guest names
         foreach ($guest_names as $guest_name) {
             if (!empty(trim($guest_name))) {
-                $wpdb->insert($wpdb->prefix . 'ccc_wor_guest_names', array(
-                    'reservation_id' => $reservation_id,
-                    'guest_name' => trim($guest_name)
-                ));
+                $wpdb->insert(
+                    $wpdb->prefix . 'ccc_wor_guest_names', array(
+                      'reservation_id' => $reservation_id,
+                      'guest_name' => trim($guest_name)
+                ), array('%d', '%s'));  
             }
         }
         
@@ -134,22 +139,24 @@ class CCC_WOR_Frontend {
             return 'Reservations are not currently open.';
         }
         
-        // Check if site is already reserved
-        $existing = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}ccc_wor_reservations 
-             WHERE site_id = %s AND reservation_year = %d AND status IN ('confirmed', 'pending')",
-            $site_id, $year
-        ));
-        
-        if ($existing > 0) {
-            return "This site is already reserved for $year.";
+        // Check if site is already reserved (skip for field camping)
+        if ($site_id !== 'field_camping') {
+            $existing = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}ccc_wor_reservations 
+                 WHERE site_id = %s AND reservation_year = %d AND status IN ('confirmed', 'pending')",
+                $site_id, $year
+            ));
+            
+            if ($existing > 0) {
+                return "This site is already reserved for $year.";
+            }
         }
         
         // Check annual period restrictions
         if ($current_period === 'annual') {
             $has_annual_status = $wpdb->get_var($wpdb->prepare(
                 "SELECT COUNT(*) FROM {$wpdb->prefix}ccc_wor_annual_status 
-                 WHERE user_id = %d AND site_id = %s AND status = 'active'",
+                 WHERE user_id = %d AND site_id = %d AND status = 'active'",
                 $user_id, $site_id
             ));
             
@@ -204,7 +211,7 @@ class CCC_WOR_Frontend {
         
         // Get site type
         $site = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}ccc_wor_sites WHERE site_id = %s",
+            "SELECT * FROM {$wpdb->prefix}ccc_wor_sites WHERE site_id = %d",
             $site_id
         ));
         

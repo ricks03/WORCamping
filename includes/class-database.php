@@ -24,7 +24,7 @@ class CCC_WOR_Database {
         // Sites table
         $sites_table = $wpdb->prefix . 'ccc_wor_sites';
         $sites_sql = "CREATE TABLE IF NOT EXISTS $sites_table (
-            site_id VARCHAR(50) PRIMARY KEY,
+            site_id INT AUTO_INCREMENT PRIMARY KEY,
             site_type VARCHAR(20) NOT NULL,
             site_number VARCHAR(10),
             display_name VARCHAR(100),
@@ -40,7 +40,7 @@ class CCC_WOR_Database {
         $reservations_sql = "CREATE TABLE IF NOT EXISTS $reservations_table (
             reservation_id INT AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT NOT NULL,
-            site_id VARCHAR(50) NOT NULL,
+            site_id INT NOT NULL,
             reservation_year YEAR NOT NULL,
             guest_count INT DEFAULT 0,
             order_id BIGINT NULL,
@@ -58,7 +58,7 @@ class CCC_WOR_Database {
         $annual_sql = "CREATE TABLE IF NOT EXISTS $annual_table (
             annual_id INT AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT NOT NULL,
-            site_id VARCHAR(50) NOT NULL,
+            site_id INT NOT NULL,
             last_reserved_year YEAR NOT NULL,
             status ENUM('active', 'under_review', 'removed') DEFAULT 'active',
             created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -88,7 +88,7 @@ class CCC_WOR_Database {
             user_id BIGINT NOT NULL,
             action VARCHAR(100) NOT NULL,
             target_user_id BIGINT NULL,
-            site_id VARCHAR(50) NULL,
+            site_id INT NULL,
             details TEXT NULL,
             ip_address VARCHAR(45) NULL,
             created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -123,84 +123,56 @@ class CCC_WOR_Database {
             $wpdb->insert(
                 $sites_table,
                 array(
-                    'site_id' => 'cabin_' . strtolower($cabin),
                     'site_type' => 'Cabin',
                     'site_number' => $cabin,
                     'display_name' => 'Cabin ' . $cabin,
                     'is_active' => 1
                 ),
-                array('%s', '%s', '%s', '%s', '%d')
+                array('%s', '%s', '%s', '%d')
             );
         }
         
         // RV Sites
-        for ($i = 1; $i <= 33; $i++) {
-            if ($i == 9) {
-                $wpdb->insert($sites_table, array(
-                    'site_id' => 'rv_09a',
-                    'site_type' => 'RV Site',
-                    'site_number' => '9a',
-                    'display_name' => 'RV Site 9a',
-                    'is_active' => 1
-                ), array('%s', '%s', '%s', '%s', '%d'));
-                
-                $wpdb->insert($sites_table, array(
-                    'site_id' => 'rv_09b',
-                    'site_type' => 'RV Site',
-                    'site_number' => '9b',
-                    'display_name' => 'RV Site 9b',
-                    'is_active' => 1
-                ), array('%s', '%s', '%s', '%s', '%d'));
-            } elseif ($i == 14) {
-                $wpdb->insert($sites_table, array(
-                    'site_id' => 'rv_14a',
-                    'site_type' => 'RV Site',
-                    'site_number' => '14a',
-                    'display_name' => 'RV Site 14a',
-                    'is_active' => 1
-                ), array('%s', '%s', '%s', '%s', '%d'));
-                
-                $wpdb->insert($sites_table, array(
-                    'site_id' => 'rv_14b',
-                    'site_type' => 'RV Site',
-                    'site_number' => '14b',
-                    'display_name' => 'RV Site 14b',
-                    'is_active' => 1
-                ), array('%s', '%s', '%s', '%s', '%d'));
-            } else {
-                $wpdb->insert($sites_table, array(
-                    'site_id' => 'rv_' . sprintf('%02d', $i),
-                    'site_type' => 'RV Site',
-                    'site_number' => (string)$i,
-                    'display_name' => 'RV Site ' . $i,
-                    'is_active' => 1
-                ), array('%s', '%s', '%s', '%s', '%d'));
-            }
+        $rv_sites = array( '1','2','3','4','5','6','7','8','9a','9b','10','11','12','13','14a','14b',
+            '15','16','17','18','19','20','21','22','23','24','31','32','33');
+        foreach ($rv_sites as $site_num) {
+            $wpdb->insert($sites_table, array(
+                'site_type' => 'RV Site',
+                'site_number' => $site_num,
+                'display_name' => 'RV Site ' . $site_num,
+                'is_active' => 1
+            ), array('%s', '%s', '%s', '%d'));
         }
         
-        // Electric Sites
-        $electric_sites = array(28,40,43,44,45,46,47,48,49,50,51,52,53,60,61);
-        foreach ($electric_sites as $site_num) {
+        // Premium Campsites
+        $premium_sites = array(28,40,43,44,45,46,47,48,49,50,51,52,53,60,61);
+        foreach ($premium_sites as $site_num) {
             $wpdb->insert($sites_table, array(
-                'site_id' => 'electric_' . $site_num,
-                'site_type' => 'Electric Site',
+                'site_type' => 'Premium Campsite',
                 'site_number' => (string)$site_num,
-                'display_name' => 'Electric Site ' . $site_num,
+                'display_name' => 'Premium Campsite ' . $site_num,
                 'is_active' => 1
-            ), array('%s', '%s', '%s', '%s', '%d'));
+            ), array('%s', '%s', '%s', '%d'));
         }
         
         // Campsites
         $campsites = array(25,26,27,29,30,34,35,36,37,38,39,41,42,54,55,56,57,58,59,62,63,64,65);
         foreach ($campsites as $site_num) {
             $wpdb->insert($sites_table, array(
-                'site_id' => 'campsite_' . $site_num,
                 'site_type' => 'Campsite',
                 'site_number' => (string)$site_num,
                 'display_name' => 'Campsite ' . $site_num,
                 'is_active' => 1
-            ), array('%s', '%s', '%s', '%s', '%d'));
+            ), array('%s', '%s', '%s', '%d'));
         }
+               
+        // Field camping (special site)
+        $wpdb->insert($sites_table, array(
+            'site_type' => 'Field Camping',
+            'site_number' => 'Field',
+            'display_name' => 'Field Camping',
+            'is_active' => 1
+        ), array('%s', '%s', '%s', '%d'));        
     }
     
     /**

@@ -27,7 +27,7 @@ class CCC_WOR_WooCommerce {
         
         // Find pending reservation for this order's user
         $user_id = $order->get_user_id();
-        $year = date('Y');
+        $year = ccc_wor_get_working_year(); // CHANGED
         
         $reservation = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}ccc_wor_reservations 
@@ -48,7 +48,9 @@ class CCC_WOR_WooCommerce {
                 'order_id' => $order_id,
                 'payment_completed_date' => current_time('mysql')
             ),
-            array('reservation_id' => $reservation->reservation_id)
+            array('reservation_id' => $reservation->reservation_id),
+            array('%s', '%d', '%s'),  // ADD THIS - for data
+            array('%d')  // ADD THIS - for WHERE clause
         );
         
         // Update or create annual status
@@ -72,7 +74,9 @@ class CCC_WOR_WooCommerce {
             $wpdb->update(
                 $wpdb->prefix . 'ccc_wor_reservations',
                 array('status' => 'cancelled'),
-                array('reservation_id' => $reservation->reservation_id)
+                array('reservation_id' => $reservation->reservation_id),
+                array('%s'),  // ADD THIS - for data
+                array('%d')  // ADD THIS - for WHERE clause
             );
             
             ccc_wor_log_transaction('reservation_cancelled', $reservation->user_id, $reservation->site_id, 'Reservation cancelled via order #' . $order_id);
@@ -86,7 +90,7 @@ class CCC_WOR_WooCommerce {
         global $wpdb;
         
         $existing = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}ccc_wor_annual_status WHERE user_id = %d AND site_id = %s",
+            "SELECT * FROM {$wpdb->prefix}ccc_wor_annual_status WHERE user_id = %d AND site_id = %d",
             $user_id, $site_id
         ));
         
@@ -98,7 +102,9 @@ class CCC_WOR_WooCommerce {
                     'status' => 'active',
                     'modified_date' => current_time('mysql')
                 ),
-                array('annual_id' => $existing->annual_id)
+                array('annual_id' => $existing->annual_id),
+                array('%d', '%s', '%s'),  // ADD THIS
+                array('%d')  // ADD THIS
             );
         } else {
             $wpdb->insert(
@@ -108,7 +114,8 @@ class CCC_WOR_WooCommerce {
                     'site_id' => $site_id,
                     'last_reserved_year' => $year,
                     'status' => 'active'
-                )
+                ),
+                array('%d', '%d', '%d', '%s')  // ADD THIS
             );
         }
     }

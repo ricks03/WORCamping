@@ -55,14 +55,13 @@ class CCC_WOR_Email {
         $user = get_userdata($user_id);
         
         // Get email template
-        $template_key = strtolower(str_replace(' ', '_', $site->site_type));
-        $template = get_option('ccc_wor_email_template_' . $template_key, $this->get_default_template($site->site_type));
-        
+        //$template_key = strtolower(str_replace(' ', '_', $site->site_type));
+        //$template = get_option('ccc_wor_email_template_' . $template_key, $this->get_default_template($site->site_type));
+        $template = get_option('ccc_wor_email_template_confirmation', $this->get_default_template($site->site_type));
         // Replace variables
         $variables = array(
             '{user_name}' => $user->display_name,
             '{user_email}' => $user->user_email,
-            '{site_id}' => $site->site_id,
             '{site_display_name}' => $site->display_name,
             '{site_type}' => $site->site_type,
             '{event_start_date}' => get_option('ccc_wor_event_start_date', ''),
@@ -89,7 +88,7 @@ class CCC_WOR_Email {
         
         $user = get_userdata($user_id);
         $site = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}ccc_wor_sites WHERE site_id = %s",
+            "SELECT * FROM {$wpdb->prefix}ccc_wor_sites WHERE site_id = %d",
             $site_id
         ));
         
@@ -97,7 +96,8 @@ class CCC_WOR_Email {
         
         $variables = array(
             '{user_name}' => $user->display_name,
-            '{site_display_name}' => $site->display_name
+            '{site_display_name}' => $site->display_name,
+            '{reservation_url}' => get_option('ccc_wor_reservation_url', '')        
         );
         
         $subject = 'Week of Rivers Reservation Not Completed';
@@ -111,24 +111,40 @@ class CCC_WOR_Email {
     /**
      * Send annual status removed email
      */
-    public function send_annual_status_removed_email($user_id, $site_id) {
+    public function send_annual_status_removed_email($user_id, $site_id,  $reason) {
         global $wpdb;
         
         $user = get_userdata($user_id);
         $site = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}ccc_wor_sites WHERE site_id = %s",
+            "SELECT * FROM {$wpdb->prefix}ccc_wor_sites WHERE site_id = %d",
             $site_id
         ));
         
         $template = get_option('ccc_wor_email_template_annual_removed', $this->get_default_annual_removed_template());
         
+        // Set context-specific reason
+        $reason_text = '';
+        switch ($reason) {
+            case 'missed_years':
+                $reason_text = 'missed reservation periods (2+ years without reserving)';
+                break;
+            case 'lost_membership':
+                $reason_text = 'expired membership';
+                break;
+            default:
+                $reason_text = 'administrative review';
+                break;
+        }
+        
         $variables = array(
             '{user_name}' => $user->display_name,
             '{site_display_name}' => $site->display_name,
-            '{general_availability_date}' => get_option('ccc_wor_general_availability_date', 'June 1')
+            '{general_availability_date}' => get_option('ccc_wor_general_availability_date', 'June 1'),
+            '{removal_reason}' => $reason_text,
+            '{reservation_url}' => get_option('ccc_wor_reservation_url', '')
         );
         
-        $subject = 'Annual Site Status Update';
+        $subject = 'Week of Rivers - Annual Site Status Update';
         $message = str_replace(array_keys($variables), array_values($variables), $template);
         
         wp_mail($user->user_email, $subject, $message);
@@ -139,21 +155,23 @@ class CCC_WOR_Email {
     /**
      * Get default confirmation template
      */
+//     private function get_default_template($site_type) {
+//         $defaults = ccc_wor_get_default_email_templates();
+//         $template_key = strtolower(str_replace(' ', '_', $site_type));
+//         return isset($defaults[$template_key]) ? $defaults[$template_key] : $defaults['campsite'];
+//     }    
     private function get_default_template($site_type) {
-        return "Dear {user_name},\n\nYour reservation for {site_display_name} has been confirmed for Week of Rivers {year}.\n\nEvent Dates: {event_start_date} to {event_end_date}\nAdditional Guests ({guest_count}): {guest_list}\n\nIf you have any questions, please visit: https://smokymtnmeadows.com/\n\nSee you at Week of Rivers!";
+        $defaults = ccc_wor_get_default_email_templates();
+        return $defaults['confirmation'];
     }
-    
-    /**
-     * Get default incomplete transaction template
-     */
+
     private function get_default_incomplete_template() {
-        return "Dear {user_name},\n\nYour reservation for {site_display_name} was not completed within the time limit and has been cancelled.\n\nTo make a new reservation, please visit the reservation page.";
+        $defaults = ccc_wor_get_default_email_templates();
+        return $defaults['incomplete'];
     }
-    
-    /**
-     * Get default annual removed template
-     */
+
     private function get_default_annual_removed_template() {
-        return "Dear {user_name},\n\nYour annual status for {site_display_name} has been removed due to [membership change/missed reservation periods].\n\nYou may still reserve available sites during the general reservation period starting {general_availability_date}.";
+        $defaults = ccc_wor_get_default_email_templates();
+        return $defaults['annual_removed'];
     }
 }
