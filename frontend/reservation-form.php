@@ -7,7 +7,7 @@
     $event_end = get_option('ccc_wor_event_end_date');
     $current_period = ccc_wor_get_current_period();
     $sites = ccc_wor_get_sites(array('is_active' => 1));
-    $year = date('Y');
+    $year = ccc_wor_get_working_year(); // CHANGED
     $user_id = get_current_user_id();
     
     // Get user's annual sites
@@ -16,7 +16,7 @@
          WHERE user_id = %d AND status = 'active'",
         $user_id
     ));
-    
+        
     // Get reserved sites
     $reserved_sites = $wpdb->get_col($wpdb->prepare(
         "SELECT site_id FROM {$wpdb->prefix}ccc_wor_reservations 
@@ -26,16 +26,16 @@
     ?>
     
     <div class="reservation-header">
-        <h2>Week of Rivers Reservations</h2>
         <?php if ($event_start && $event_end): ?>
-        <p class="event-dates">Event Dates: <?php echo date('F j, Y', strtotime($event_start)); ?> to <?php echo date('F j, Y', strtotime($event_end)); ?></p>
+        <p class="event-dates">Week of Rivers Dates: <?php echo date('F j, Y', strtotime($event_start)); ?> to <?php echo date('F j, Y', strtotime($event_end)); ?></p>
         <?php endif; ?>
         
         <div class="status-message">
             <?php echo ccc_wor_get_status_message($current_period); ?>
         </div>
         
-        <p>For questions, visit: <a href="https://smokymtnmeadows.com/" target="_blank">https://smokymtnmeadows.com/</a></p>
+        <p>For questions about the campground, visit: <a href="https://smokymtnmeadows.com/" target="_blank">https://smokymtnmeadows.com/</a></p>
+        <p>For questions about campground reservations for WOR, contact the <a href="mailto:cruise.chair@carolinacanoeclub.org?subject=Week of Rivers Question">CCC Cruise Chair</a>.
         
         <?php
         $campground_image = get_option('ccc_wor_campground_image_url');
@@ -44,7 +44,9 @@
         <p><a href="<?php echo esc_url($campground_image); ?>" target="_blank">View Campground Map</a></p>
         <?php endif; ?>
     </div>
-    
+
+    <?php if ($current_period !== 'closed'): ?>
+            
     <div class="site-legend">
         <h3>Legend</h3>
         <div class="legend-items">
@@ -55,6 +57,34 @@
         </div>
     </div>
     
+    <div class="field-camping-section" style="background: #e8f5e9; padding: 20px; margin: 20px 0; border-radius: 5px; border: 2px solid #4caf50;">
+        <h3 style="margin-top: 0; color: #2e7d32;">Field Camping Available</h3>
+        <p><strong>Camp in the open field</strong> - No assigned site, bring your own tent or small RV.</p>
+        <button type="button" id="field-camping-btn" class="button button-primary" style="background: #4caf50; border-color: #4caf50;">Reserve Field Camping</button>
+    </div>
+
+    <div id="field-camping-form" style="display: none; background: #f1f8e9; padding: 20px; margin: 20px 0; border-radius: 5px; border: 2px solid #4caf50;">
+        <h3>Field Camping Reservation</h3>
+        <form id="ccc-wor-field-camping-form">
+            <input type="hidden" name="site_id" value="field_camping">
+            
+            <p>
+                <label for="field_guest_count">Number of people (including yourself):</label>
+                <input type="number" name="guest_count" id="field_guest_count" min="1" value="1" required>
+            </p>
+            
+            <p>
+                <label for="field_guest_names">Names of all campers (one per line):</label>
+                <textarea name="guest_names" id="field_guest_names" rows="5" required></textarea>
+            </p>
+            
+            <p>
+                <button type="submit" class="button button-primary" style="background: #4caf50; border-color: #4caf50;">Reserve Field Camping & Checkout</button>
+                <button type="button" class="button" onclick="cancelFieldSelection()">Cancel</button>
+            </p>
+        </form>
+    </div>
+   
     <div class="site-grid">
         <?php
         $sites_by_type = array();
@@ -68,29 +98,47 @@
                 return (int)$a->site_number - (int)$b->site_number;
             });
         }
-        if (isset($sites_by_type['Electric Site'])) {
-            usort($sites_by_type['Electric Site'], function($a, $b) {
+        if (isset($sites_by_type['Premium Campsite'])) {
+            usort($sites_by_type['Premium Campsite'], function($a, $b) {
                 return (int)$a->site_number - (int)$b->site_number;
             });
         }
         
-        $display_order = array('Campsite', 'Electric Site', 'RV Site', 'Cabin');
+        $display_order = array('Campsite', 'Premium Campsite', 'RV Site', 'Cabin');
         
         foreach ($display_order as $type):
             if (!isset($sites_by_type[$type])) continue;
+            
+            // Check if this section has any visible sites
+            $has_visible_sites = false;
+            foreach ($sites_by_type[$type] as $site) {
+                $is_annual = in_array($site->site_id, $annual_sites);
+                // During annual period, only show user's annual sites
+                if ($current_period == 'annual' && !$is_annual) {
+                    continue;
+                }
+                $has_visible_sites = true;
+                break; // Found at least one visible site
+            }
+            
+            // Skip this entire section if no visible sites
+            if (!$has_visible_sites) continue;
         ?>
-        <div class="site-type-group">
+        <div class="site-type-group <?php echo $type === 'Cabin' ? 'cabin-sites' : ''; ?>">
             <h3><?php echo esc_html($type); ?>s</h3>
             <div class="sites">
                 <?php foreach ($sites_by_type[$type] as $site):
                     $is_reserved = in_array($site->site_id, $reserved_sites);
                     $is_annual = in_array($site->site_id, $annual_sites);
                     
+                    // During annual period, only show user's annual sites
+                    if ($current_period == 'annual' && !$is_annual) {
+                      continue; // Skip this site
+                    }
+                    
                     $class = 'site-box ';
                     if ($is_reserved) {
                         $class .= 'reserved';
-                    } elseif ($current_period === 'annual' && !$is_annual) {
-                        $class .= 'annual';
                     } elseif ($current_period === 'general') {
                         $class .= 'open-to-all';
                     } elseif ($is_annual) {
@@ -129,46 +177,6 @@
             </p>
         </form>
     </div>
+    <?php endif; ?>        
+
 </div>
-
-<?php
-function ccc_wor_get_current_period() {
-    $annual_start = get_option('ccc_wor_annual_start_date', 'May 1');
-    $general_start = get_option('ccc_wor_general_availability_date', 'June 1');
-    $event_end = get_option('ccc_wor_event_end_date');
-    
-    $current_date = current_time('timestamp');
-    $annual_timestamp = strtotime($annual_start . ' ' . date('Y'));
-    $general_timestamp = strtotime($general_start . ' ' . date('Y'));
-    $event_end_timestamp = $event_end ? strtotime($event_end) : PHP_INT_MAX;
-    
-    if ($current_date < $annual_timestamp) {
-        return 'closed';
-    } elseif ($current_date < $general_timestamp) {
-        return 'annual';
-    } elseif ($current_date <= $event_end_timestamp) {
-        return 'general';
-    } else {
-        return 'closed';
-    }
-}
-
-function ccc_wor_get_status_message($period) {
-    $annual_start = get_option('ccc_wor_annual_start_date', 'May 1');
-    $general_start = get_option('ccc_wor_general_availability_date', 'June 1');
-    $event_start = get_option('ccc_wor_event_start_date');
-    $event_end = get_option('ccc_wor_event_end_date');
-    
-    switch ($period) {
-        case 'closed':
-            if (current_time('timestamp') < strtotime($annual_start . ' ' . date('Y'))) {
-                return "Reservations are not yet open. Annual member reservations begin on $annual_start.<br>Next: Annual member reservations open $annual_start";
-            } else {
-                return "Reservations are closed for this year.";
-            }
-        case 'annual':
-            return "Annual member reservation period is active until $general_start. General reservations begin on $general_start.<br>Next: General reservations open $general_start";
-        case 'general':
-            return "General reservation period is active. All available sites can be reserved.<br>Event dates: " . date('F j, Y', strtotime($event_start)) . " to " . date('F j, Y', strtotime($event_end));
-    }
-}
