@@ -5,6 +5,7 @@
 ```
 ccc-wor-camping/
 +-- ccc-wor-camping.php (main plugin file)
++-- uninstall.php
 +-- includes/
 ¦   +-- class-database.php
 ¦   +-- class-admin.php
@@ -50,25 +51,16 @@ ccc-wor-camping/
    - WooCommerce must be installed and activated
    - Enable High-Performance Order Storage in WooCommerce settings
 
-### 3. Plugin Activation
-
-1. Go to Plugins ? Installed Plugins
-2. Find "CCC WOR Camping" and click Activate
-3. The plugin will automatically:
-   - Create all database tables
-   - Insert default sites (cabins, RV sites, electric sites, campsites)
-   - Set default configuration options
-   - Schedule cron jobs for cleanup
-
-### 4. WooCommerce Product Setup
+### 3. WooCommerce Product Setup
 
 Create the following products in WooCommerce (Products ? Add New):
 
 1. **Campsite** - Set your 9-day price
-2. **Electric Site** - Set your 9-day price  
+2. **Premuim Campsite** - Set your 9-day price  
 3. **RV Site** - Set your 9-day price
 4. **Cabin** - Set your 9-day price
-5. **Guest** - Set per-person price
+5. **Guest** - Set  9-day per-person price
+6. **Field Camping** - Set  9-day per-person price
 
 For each product:
 - Set product type to "Simple Product"
@@ -76,19 +68,32 @@ For each product:
 - Do NOT add to any categories or make searchable
 - The plugin will automatically add these to cart during checkout
 
+### 4. Plugin Activation
+
+1. Go to Plugins ? Installed Plugins
+2. Find "CCC WOR Camping" and click Activate
+3. The plugin will automatically:
+   - Create all database tables
+   - Insert default sites (cabins, RV sites, premium campsites, campsites)
+   - Set default configuration options
+   - Schedule cron jobs for cleanup
+
 ### 5. Initial Configuration
 
-Navigate to **Campground Reservations ? Settings** and configure:
+Navigate to **Campground ? Settings** and configure:
 
 1. **Event Dates**:
-   - Event Start Date (e.g., July 1, 2025)
-   - Event End Date (e.g., July 9, 2025)
+   - Event Start Date (e.g., June 26, 2026)
+   - Event End Date (e.g., July 5, 2026)
 
 2. **Availability Periods**:
-   - Annual Member Start Date (default: May 1)
-   - General Availability Date (default: June 1)
+   - Annual Member Start Date (default: May 1, 2026)
+   - General Availability Date (default: June 1, 2026)
    - Transaction Timeout (default: 30 minutes)
 
+3. **Reservation URL**:
+   - Enter the planned URL for the main registration page.
+   
 3. **Campground Image**:
    - Upload a campground map image to your Media Library
    - Copy the URL and paste it in the settings
@@ -98,10 +103,10 @@ Navigate to **Campground Reservations ? Settings** and configure:
 If you have historical reservation data:
 
 1. Prepare a CSV file with format: `member_email,site_number,year`
-   - Example: `john@example.com,campsite_25,2023`
-   - Only include data from the last 2 years
+   - Example: `john@example.com,25,2023`
+   - Only include data from the last 2 years (older data will be flagged)
 
-2. Go to **Campground Reservations ? Settings**
+2. Go to **Campground ? Annual Members**
 3. Scroll to CSV Import section
 4. Upload your CSV file
 5. The system will validate each entry and only import valid records
@@ -112,12 +117,13 @@ If you have historical reservation data:
 2. Create a page titled "Week of Rivers Reservations"
 3. Add the shortcode: `[ccc_wor_reservations]`
 4. Set page permissions to require login (using a membership plugin or custom code)
-5. Publish the page
+5. Set the URL to the same one in the **Reservation URL** field in Settings
+6. Publish the page
 
 ### 8. Email Template Customization
 
-1. Navigate to **Campground Reservations ? Email Templates**
-2. Customize templates for each site type
+1. Navigate to **Campground ? Email Templates**
+2. Customize email templates
 3. Use the available variables to personalize emails
 4. Save changes
 
@@ -141,21 +147,20 @@ If you have historical reservation data:
 
 ### Annual Members
 - View all annual members and their sites
-- Review members who should lose annual status
+- Review members who should lose annual status (2+ years, not ccc_member)
 - Manually add/remove annual members
 - Send reminder emails to members who haven't reserved
+- Send individual reminder emails to specific annual members
 
 ### Email Templates
-- Edit confirmation emails for each site type
-- Customize incomplete transaction email
-- Customize annual status removed email
+- Customize email templates including site confirmation, reminder, incomplete transaction, and annual status removed emails
 - Preview available template variables
 
 ### Settings
 - Configure event dates and availability periods
 - Set transaction timeout
-- Upload campground map
-- Import historical CSV data
+- URL for campground map
+- URL for registration page
 
 ### Transaction Log
 - View all system actions with timestamps
@@ -208,6 +213,11 @@ If you have historical reservation data:
 - Import historical data to establish baseline
 - Manually add annual members if needed
 - Review and process members requiring status removal
+
+### Working Year Display Issues
+- Dashboard and reservations may show different years if event dates aren't configured properly
+- Verify Event Start Date and Event End Date are set correctly in Settings
+- The system automatically switches to work on next year's reservations after the event ends
 
 ## Security Considerations
 

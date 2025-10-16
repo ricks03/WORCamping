@@ -3,7 +3,7 @@
  * Plugin Name: CCC WOR Camping
  * Description: Campground reservations with annual customers for Week of Rivers event
  * Version: 1.0.0
- * Author: Your Name
+ * Author: Rick Steeves, Carolina Canoe Club
  * Text Domain: ccc-wor-camping
  */
 
@@ -71,12 +71,13 @@ class CCC_WOR_Camping {
     
     private function set_default_options() {
         $defaults = array(
-            'annual_start_date' => 'May 1',
-            'general_availability_date' => 'June 1',
-            'event_start_date' => '',
-            'event_end_date' => '',
+            'annual_start_date' => date('Y') . '-05-01', // May 1st of current year
+            'general_availability_date' => date('Y') . '-06-01', // June 1st of current year
+            'event_start_date' => date('Y') . '-06-26',
+            'event_end_date' => date('Y') . '-07-05',
             'transaction_timeout' => 30,
-            'campground_image_url' => ''
+            'reservation_url' => 'https://wor.carolinacanoeclub.org/week-of-rivers-reservations/',
+            'campground_image_url' => 'https://smokymtnmeadows.com/sitemap/'
         );
         
         foreach ($defaults as $key => $value) {
