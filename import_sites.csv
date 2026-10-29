@@ -1,0 +1,5 @@
+site_type,site_number,display_name,is_active
+Cabin,Butterfly,"Cabin Butterfly",1
+Campsite,AA,"Campsite AA",1
+"Premium Campsite",BB,"Premium Campsite BB",1
+"RV Site",CC,"RV Site CC",1
